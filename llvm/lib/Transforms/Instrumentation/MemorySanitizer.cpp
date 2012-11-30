@@ -50,16 +50,20 @@
 #include "BlackList.h"
 #include "llvm/DataLayout.h"
 #include "llvm/Function.h"
-#include "llvm/IRBuilder.h"
 #include "llvm/InlineAsm.h"
 #include "llvm/IntrinsicInst.h"
+#include "llvm/IRBuilder.h"
 #include "llvm/LLVMContext.h"
 #include "llvm/MDBuilder.h"
 #include "llvm/Module.h"
+#include "llvm/Type.h"
 #include "llvm/ADT/DepthFirstIterator.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/ValueMap.h"
+#include "llvm/Transforms/Instrumentation.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include "llvm/Transforms/Utils/ModuleUtils.h"
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Compiler.h"
@@ -171,7 +175,6 @@ private:
   Value *MsanSetAllocaOriginFn;
   /// \brief Run-time helper that poisons stack on function entry.
   Value *MsanPoisonStackFn;
-
   /// \brief MSan runtime replacements for memmove, memcpy and memset.
   Value *MemmoveFn, *MemcpyFn, *MemsetFn;
 
@@ -190,8 +193,8 @@ private:
   /// \brief An empty volatile inline asm that prevents callback merge.
   InlineAsm *EmptyAsm;
 
-  friend class MemorySanitizerVisitor;
-  friend class VarArgAMD64Helper;
+  friend struct MemorySanitizerVisitor;
+  friend struct VarArgAMD64Helper;
 };
 }  // namespace
 
@@ -342,6 +345,8 @@ struct VarArgHelper {
   /// This method is called after visiting all interesting (see above)
   /// instructions in a function.
   virtual void finalizeInstrumentation() = 0;
+
+  virtual ~VarArgHelper() {}
 };
 
 struct MemorySanitizerVisitor;
